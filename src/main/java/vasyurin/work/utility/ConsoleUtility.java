@@ -85,7 +85,12 @@ public class ConsoleUtility {
             String choice = scanner.nextLine();
 
             if (validator.validate(choice)) {
-                return Integer.parseInt(choice);
+                if (Integer.parseInt(choice)<=wallets.size()&&Integer.parseInt(choice)>=0) {
+                    return Integer.parseInt(choice);
+                }
+                else {
+                    System.out.println("Выберете существующий кошелёк из списка");
+                }
             } else {
                 System.out.println("Введите корректное число");
             }
@@ -149,6 +154,7 @@ public class ConsoleUtility {
                 choice = getWallet(wallets);
 
                 if (choice == 0) break;
+
                 receiverWallet = wallets.get(choice - 1);
 
                 if ((senderWallet.equals(receiverWallet))) {
