@@ -1,2 +1,0 @@
-Transaction{id=1, walletId=2, amount=1000.0, type=INCOME}
-Transaction{id=2, walletId=2, amount=4.0, type=EXPENSE}

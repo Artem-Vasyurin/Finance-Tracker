@@ -1,5 +1,0 @@
-Transaction{id=1, walletId=3, amount=1000.0, type=INCOME}
-Transaction{id=2, walletId=3, amount=123.0, type=INCOME}
-Transaction{id=3, walletId=3, amount=4.0, type=INCOME}
-Transaction{id=4, walletId=3, amount=90.0, type=EXPENSE}
-Transaction{id=5, walletId=3, amount=700.0, type=INCOME}

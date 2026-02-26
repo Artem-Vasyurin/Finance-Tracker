@@ -1,6 +1,6 @@
 package vasyurin.work.entities;
 
-import vasyurin.work.enums.TransactionType;
+import vasyurin.work.enums.TransactionTypes;
 import vasyurin.work.repositories.FileStorageRepository;
 import vasyurin.work.repositories.FileStorageRepositoryImpl;
 
@@ -15,7 +15,7 @@ public class Wallet {
 
     public Wallet(int id) {
         this.id = id;
-        Transaction firstMoney = new Transaction(1,id, 1000,TransactionType.INCOME);
+        Transaction firstMoney = new Transaction(1,id, 1000, TransactionTypes.INCOME);
         transactions.add(firstMoney);
     }
 
@@ -23,9 +23,9 @@ public class Wallet {
         float balance = 0;
 
         for (Transaction transaction : transactions) {
-            if (transaction.getType().equals(TransactionType.INCOME)) {
+            if (transaction.getType().equals(TransactionTypes.INCOME)) {
                 balance += transaction.getAmount();
-            } else if (transaction.getType().equals(TransactionType.EXPENSE)) {
+            } else if (transaction.getType().equals(TransactionTypes.EXPENSE)) {
                 balance -= transaction.getAmount();
             }
         }
