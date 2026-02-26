@@ -8,10 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileStorageRepositoryImpl implements FileStorageRepository {
-
     @Override
     public void save(List<Transaction> transactions) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("transactions.txt", true))) {
+        try (BufferedWriter writer = new BufferedWriter(
+                new FileWriter("transactionsInWalletId" + transactions.get(0).getWalletId() + ".txt"))) {
             for (Transaction transaction : transactions) {
                 writer.write(transaction.toString());
                 writer.newLine();
@@ -20,10 +20,11 @@ public class FileStorageRepositoryImpl implements FileStorageRepository {
 
     }
 
+
     @Override
     public List<Transaction> download(Integer walletId) throws IOException {
         List<Transaction> transactions = new ArrayList<>();
-        BufferedReader reader = new BufferedReader(new FileReader("transactions.txt"));
+        BufferedReader reader = new BufferedReader(new FileReader("transactionsInWalletId" + walletId + ".txt"));
         String line;
         while ((line = reader.readLine()) != null) {
 

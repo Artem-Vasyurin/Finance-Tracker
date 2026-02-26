@@ -12,7 +12,6 @@ import vasyurin.work.services.interfaces.InputInConsoleValidator;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
 
 public class ConsoleUtility {
@@ -29,7 +28,6 @@ public class ConsoleUtility {
     public static ConsoleUtility getInstance() {
         return instance;
     }
-
 
     public void start() {
         System.out.println("Добро пожаловать! ");
@@ -59,9 +57,8 @@ public class ConsoleUtility {
     }
 
     private void beginTransaction(Wallet senderWallet, Wallet receiverWallet, int sumTransaction) {
-        Random random = new Random();
-        Transaction income = new Transaction(random.nextInt(0, 1000000000), receiverWallet.getId(), sumTransaction, TransactionType.INCOME);
-        Transaction expense = new Transaction(random.nextInt(0, 1000000000), senderWallet.getId(), sumTransaction, TransactionType.EXPENSE);
+        Transaction income = new Transaction(receiverWallet.getTransactions().size() + 1, receiverWallet.getId(), sumTransaction, TransactionType.INCOME);
+        Transaction expense = new Transaction(senderWallet.getTransactions().size() + 1, senderWallet.getId(), sumTransaction, TransactionType.EXPENSE);
 
         if (senderWallet.getBalance() >= sumTransaction) {
 
@@ -78,17 +75,16 @@ public class ConsoleUtility {
         while (true) {
             int id = 1;
             for (Wallet wallet : wallets) {
-
                 System.out.println(id++ + ". Баланс: " + wallet.getBalance());
             }
+
             System.out.println(0 + ". Назад");
             String choice = scanner.nextLine();
 
             if (validator.validate(choice)) {
-                if (Integer.parseInt(choice)<=wallets.size()&&Integer.parseInt(choice)>=0) {
+                if (Integer.parseInt(choice) <= wallets.size() && Integer.parseInt(choice) >= 0) {
                     return Integer.parseInt(choice);
-                }
-                else {
+                } else {
                     System.out.println("Выберете существующий кошелёк из списка");
                 }
             } else {
@@ -127,7 +123,6 @@ public class ConsoleUtility {
     }
 
     private void viewBalance() {
-
         while (true) {
             System.out.println("Выберите кошелёк");
             int walletChoice = getWallet(wallets);

@@ -15,6 +15,10 @@ public class Transaction {
         this.type = type;
     }
 
+    public int getWalletId() {
+        return walletId;
+    }
+
     public float getAmount() {
         return amount;
     }
