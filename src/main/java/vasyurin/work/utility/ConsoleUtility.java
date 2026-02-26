@@ -1,13 +1,15 @@
 package vasyurin.work.utility;
 
-import vasyurin.work.Exeption.NoMoneyException;
-import vasyurin.work.dto.Transaction;
+import vasyurin.work.entities.Transaction;
+import vasyurin.work.entities.Wallet;
 import vasyurin.work.enums.TransactionType;
-import vasyurin.work.dto.Wallet;
-import vasyurin.work.dto.User;
+import vasyurin.work.exeption.NoMoneyException;
+import vasyurin.work.services.FileStorageServiceImpl;
 import vasyurin.work.services.InputInConsoleValidatorImpl;
+import vasyurin.work.services.interfaces.FileStorageService;
 import vasyurin.work.services.interfaces.InputInConsoleValidator;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -17,64 +19,17 @@ public class ConsoleUtility {
 
     private static final ConsoleUtility instance = new ConsoleUtility();
     private static final Scanner scanner = new Scanner(System.in);
-    private static final List<User> users = new ArrayList<User>();
     private static final InputInConsoleValidator validator = new InputInConsoleValidatorImpl();
+    private static final FileStorageService fileStorageService = new FileStorageServiceImpl();
+    private static final List<Wallet> wallets = new ArrayList<>();
 
     private ConsoleUtility() {
-
     }
 
     public static ConsoleUtility getInstance() {
         return instance;
     }
 
-    private static int getWallet(User user) {
-        while (true){
-            int id = 1;
-            for (Wallet wallet : user.getWallets()) {
-
-                System.out.println(id++ + ". Баланс: " + wallet.getBalance());
-
-            }
-            System.out.println(0 + ". Назад");
-            String choice = scanner.nextLine();
-
-            if (validator.validate(choice)){
-                return Integer.parseInt(choice);
-            }else {
-                System.out.println("Введите корректное число");
-            }
-        }
-    }
-
-    private static int getUser(List<User> users) {
-
-        int id = 1;
-        for (User user : users) {
-
-            System.out.println(id++ + ". " + user.getName());
-
-        }
-        System.out.println(0 + ". Назад");
-
-        while (true){
-            String choice = scanner.nextLine();
-
-            if (validator.validate(choice)){
-                return Integer.parseInt(choice);
-            }else {
-                System.out.println("Введите корректное число");
-            }
-        }
-    }
-
-    private static boolean cheсkNoUsers(List<User> users) {
-        if (users.isEmpty()) {
-            System.out.println("Нет пользователей");
-            return true;
-        }
-        return false;
-    }
 
     public void start() {
         System.out.println("Добро пожаловать! ");
@@ -83,157 +38,163 @@ public class ConsoleUtility {
             System.out.println(("""
                     1. Перевести деньги
                     2. Просмотреть баланс
-                    3. Создать пользователя
                     4. Создать кошелёк
-                    5. Просмотреть пользователей
+                    5. Сохранить в файл транзакции
+                    6. Просмотреть список транзакций
                     0. Выход
                     """));
 
-            int choice = scanner.nextInt();
+            String input = scanner.nextLine();
+            int choice = Integer.parseInt(input);
 
             switch (choice) {
-                case 1 -> performTransfer(users);
-                case 2 -> viewBalance(users);
-                case 3 -> createUser();
-                case 4 -> createWallet(users);
-                case 5 -> viewUsers();
+                case 1 -> performTransfer();
+                case 2 -> viewBalance();
+                case 4 -> createWallet();
+                case 5 -> save();
+                case 6 -> showTransaction();
                 case 0 -> Thread.currentThread().interrupt();
             }
         }
     }
 
-    private void viewBalance(List<User> users) {
-        if (cheсkNoUsers(users)) return;
-        while (true) {
-            System.out.println("Выберите пользователя, чей баланс хотите посмотреть");
-
-            int choise = getUser(users);
-            if (choise == 0) return;
-            while (true) {
-                System.out.println("Выберите кошелёк");
-                int walletChoice = getWallet(users.get(choise - 1));
-                if (walletChoice == 0) break;
-                System.out.println(users.get(choise - 1).getWallets().get(walletChoice - 1).getBalance());
-                return;
-            }
-
-        }
-
-    }
-
-    private void performTransfer(List<User> users) {
-        if (cheсkNoUsers(users)) return;
-
-        User sender, receiver;
-        Wallet senderWallet, receiverWallet;
-
-        while (true) {
-            System.out.println("Выберете кто переводит деньги");
-
-            int choice = getUser(users);
-            if (choice == 0) return;
-            sender = users.get(choice - 1);
-
-            while (true) {
-                System.out.println("Выберите кошелёк списания ");
-
-                choice = getWallet(sender);
-                if (choice == 0) break;
-                senderWallet = sender.getWallets().get(choice - 1);
-
-                while (true) {
-                    System.out.println("Выберете кому поступят деньги");
-
-                    choice = getUser(users);
-                    if (choice == 0) break;
-                    receiver = users.get(choice - 1);
-
-                    while (true) {
-
-                        System.out.println("Выберите кошелёк пополнения ");
-
-                        choice = getWallet(receiver);
-
-                        if (choice == 0) break;
-                        receiverWallet = receiver.getWallets().get(choice - 1);
-
-                        if (sender.equals(receiver) && (senderWallet.equals(receiverWallet))) {
-
-                            System.out.println("Нельзя перевести деньги на кошелёк отправления");
-                            continue;
-                        }
-
-                        while (true) {
-                            System.out.println("""
-                                    На какую сумму совершить перевод?
-                                    0. Назад
-                                    """);
-
-                            String input = scanner.nextLine();
-
-                            if (!validator.validate(input)) {
-                               System.out.println("Введите корректное число");
-                               continue;
-                            }
-                            int sumTransaction = Integer.parseInt(input);
-
-                            if (sumTransaction == 0) break;
-
-                            try {
-                                beginTransaction(sender, receiver, senderWallet, receiverWallet, sumTransaction);
-                            } catch (NoMoneyException e) {
-                                System.out.println(e.getMessage());
-                                continue;
-                            }
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static void beginTransaction(User Sender, User Receiver, Wallet SenderWallet, Wallet ReceiverWallet, int sumTransaction) {
+    private void beginTransaction(Wallet senderWallet, Wallet receiverWallet, int sumTransaction) {
         Random random = new Random();
-        Transaction transaction = new Transaction(random.nextInt());
-        transaction.setSender(Sender);
-        transaction.setReceiver(Receiver);
-        transaction.setWalletIdSend(SenderWallet.getId());
-        transaction.setWalletIdReceive(ReceiverWallet.getId());
+        Transaction income = new Transaction(random.nextInt(0, 1000000000), receiverWallet.getId(), sumTransaction, TransactionType.INCOME);
+        Transaction expense = new Transaction(random.nextInt(0, 1000000000), senderWallet.getId(), sumTransaction, TransactionType.EXPENSE);
 
-        if (SenderWallet.getBalance() >= sumTransaction) {
-            SenderWallet.setBalance(SenderWallet.getBalance() - sumTransaction);
-            ReceiverWallet.setBalance(ReceiverWallet.getBalance() + sumTransaction);
+        if (senderWallet.getBalance() >= sumTransaction) {
+
+            senderWallet.addTransaction(expense);
+            receiverWallet.addTransaction(income);
         } else {
             throw new NoMoneyException("Не достаточно средств");
         }
 
-        transaction.setType(TransactionType.EXPENSE);
-        SenderWallet.getTransactions().add(transaction);
-
-        transaction.setType(TransactionType.INCOME);
-        ReceiverWallet.getTransactions().add(transaction);
         System.out.println("Транзакция успешно проведена");
     }
 
-    private void createUser() {
-        System.out.println("Введите имя пользователя ");
-        String userName = scanner.next();
-        User user = new User(userName);
-        user.CreateWallet();
-        users.add(user);
+    private int getWallet(List<Wallet> wallets) {
+        while (true) {
+            int id = 1;
+            for (Wallet wallet : wallets) {
+
+                System.out.println(id++ + ". Баланс: " + wallet.getBalance());
+            }
+            System.out.println(0 + ". Назад");
+            String choice = scanner.nextLine();
+
+            if (validator.validate(choice)) {
+                if (Integer.parseInt(choice)<=wallets.size()&&Integer.parseInt(choice)>=0) {
+                    return Integer.parseInt(choice);
+                }
+                else {
+                    System.out.println("Выберете существующий кошелёк из списка");
+                }
+            } else {
+                System.out.println("Введите корректное число");
+            }
+        }
     }
 
-    private void createWallet(List<User> users) {
-        System.out.println("Кому создать кошелёк? ");
-        int choise = getUser(users);
-        if (choise == 0) return;
-        users.get(choise - 1).CreateWallet();
-        System.out.println("Кошёлёк " + users.get(choise - 1).getWallets().size() + " у " + users.get(choise - 1) + " Создан");
+    private void showTransaction() {
+        while (true) {
+            System.out.println("Выберите кошелёк список транзакций которого вы хотите просмотреть");
+            int walletChoice = getWallet(wallets);
+            if (walletChoice == 0) break;
+            try {
+                fileStorageService.download(walletChoice).stream().forEach(System.out::println);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            return;
+        }
     }
 
-    private void viewUsers() {
-        if (cheсkNoUsers(users)) return;
-        users.stream().map(User::getName).forEach(System.out::println);
+    private void save() {
+        while (true) {
+            System.out.println("Выберите кошелёк для сохранения его списка транзакций");
+            int walletChoice = getWallet(wallets);
+            if (walletChoice == 0) break;
+            try {
+                fileStorageService.save(wallets.get(walletChoice - 1));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return;
+        }
+    }
+
+    private void viewBalance() {
+
+        while (true) {
+            System.out.println("Выберите кошелёк");
+            int walletChoice = getWallet(wallets);
+            if (walletChoice == 0) break;
+            System.out.println(wallets.get(walletChoice - 1).getBalance());
+            return;
+        }
+    }
+
+    private void performTransfer() {
+        Wallet senderWallet, receiverWallet;
+
+        while (true) {
+            System.out.println("Выберите кошелёк списания ");
+
+            int choice = getWallet(wallets);
+            if (choice == 0) break;
+            senderWallet = wallets.get(choice - 1);
+
+            while (true) {
+
+                System.out.println("Выберите кошелёк пополнения ");
+
+                choice = getWallet(wallets);
+
+                if (choice == 0) break;
+
+                receiverWallet = wallets.get(choice - 1);
+
+                if ((senderWallet.equals(receiverWallet))) {
+
+                    System.out.println("Нельзя перевести деньги на кошелёк отправления");
+                    continue;
+                }
+
+                while (true) {
+                    System.out.println("""
+                            На какую сумму совершить перевод?
+                            0. Назад
+                            """);
+
+                    String input = scanner.nextLine();
+
+                    if (!validator.validate(input)) {
+                        System.out.println("Введите корректное число");
+                        continue;
+                    }
+                    int sumTransaction = Integer.parseInt(input);
+
+                    if (sumTransaction == 0) break;
+
+                    try {
+                        beginTransaction(senderWallet, receiverWallet, sumTransaction);
+                    } catch (NoMoneyException e) {
+                        System.out.println(e.getMessage());
+                        continue;
+                    }
+                    return;
+                }
+
+            }
+        }
+
+    }
+
+    private void createWallet() {
+        Wallet wallet = new Wallet(wallets.size() + 1);
+        wallets.add(wallet);
     }
 }
