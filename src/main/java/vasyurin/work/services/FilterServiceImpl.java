@@ -37,7 +37,6 @@ public class FilterServiceImpl implements FilterService {
         return List.of();
     }
 
-
     @Override
     public List<Transaction> filteringTransactionsByMonth(Integer walletId, Integer month) throws IOException {
         return getAndFilteringByMonth(walletId, month);

@@ -7,9 +7,11 @@ import vasyurin.work.exeption.NoMoneyException;
 import vasyurin.work.services.FileStorageServiceImpl;
 import vasyurin.work.services.FilterServiceImpl;
 import vasyurin.work.services.InputInConsoleValidatorImpl;
+import vasyurin.work.services.ReportServiceImpl;
 import vasyurin.work.services.interfaces.FileStorageService;
 import vasyurin.work.services.interfaces.FilterService;
 import vasyurin.work.services.interfaces.InputInConsoleValidator;
+import vasyurin.work.services.interfaces.ReportService;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,7 +25,9 @@ public class ConsoleUtility {
     private static final InputInConsoleValidator validator = new InputInConsoleValidatorImpl();
     private static final FileStorageService fileStorageService = new FileStorageServiceImpl();
     private static final FilterService filterService = new FilterServiceImpl();
+    private static final ReportService reportService = new ReportServiceImpl();
     private static final List<Wallet> wallets = new ArrayList<>();
+
 
     private ConsoleUtility() {
     }
@@ -116,7 +120,7 @@ public class ConsoleUtility {
             switch (choice) {
                 case 1 -> {
                     try {
-                        fileStorageService.download(walletChoice).forEach(System.out::println);
+                        reportService.printTransactionsTable(fileStorageService.download(walletChoice));
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -151,7 +155,6 @@ public class ConsoleUtility {
     }
 
     private void filteringTransactionsByCategory(Integer walletId) throws IOException {
-
         while (true) {
             System.out.println(("""
                     Выберете категорию по которой надо отфильтровать
@@ -176,14 +179,16 @@ public class ConsoleUtility {
                 System.out.println("Таких транзакций нет :( ");
 
             } else {
-                System.out.println(transactions);
+                reportService.printTransactionsTable(transactions);
+                System.out.println("Сумма за все выбранная транзакции = " + getSumm(transactions));
+                break;
             }
         }
     }
 
     private void filteringTransactionsByMonth(Integer walletId) throws IOException {
         while (true) {
-            System.out.println("Напишите месяц по которому надо отфильтровать");
+            System.out.println("Напишите месяц по которому надо отфильтровать или 0 чтобы вернуться назад");
 
             int month = Integer.parseInt(scanner.nextLine());
             if (month == 0) return;
@@ -196,7 +201,9 @@ public class ConsoleUtility {
             if (transactions.isEmpty()) {
                 System.out.println("Таких транзакций нет :( ");
             } else {
-                System.out.println(transactions);
+                reportService.printTransactionsTable(transactions);
+                System.out.println("Сумма за все выбранная транзакции = " + getSumm(transactions));
+                break;
             }
         }
     }
@@ -222,9 +229,24 @@ public class ConsoleUtility {
             if (transactions.isEmpty()) {
                 System.out.println("Таких транзакций нет :( ");
             } else {
-                System.out.println(transactions);
+                reportService.printTransactionsTable(transactions);
+                System.out.println("Сумма за все выбранная транзакции = " + getSumm(transactions));
+                break;
             }
         }
+    }
+
+    private float getSumm(List<Transaction> transactions) {
+        float summ = 0;
+
+        for (Transaction transaction : transactions) {
+            if (transaction.getType().equals(TransactionTypes.INCOME)) {
+                summ += transaction.getAmount();
+            } else if (transaction.getType().equals(TransactionTypes.EXPENSE)) {
+                summ -= transaction.getAmount();
+            }
+        }
+        return summ;
     }
 
     private void save() {
