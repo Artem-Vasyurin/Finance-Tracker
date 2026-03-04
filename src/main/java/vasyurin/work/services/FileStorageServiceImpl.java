@@ -24,8 +24,7 @@ public class FileStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public List<Transaction> download(Integer walletId) throws IOException {
-        return fileStorageRepository.download(walletId);
+    public List<Transaction> download(Wallet wallet) throws IOException {
+        return fileStorageRepository.download(wallet);
     }
-
 }

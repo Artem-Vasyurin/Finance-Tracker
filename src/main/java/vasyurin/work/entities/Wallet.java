@@ -1,11 +1,14 @@
 package vasyurin.work.entities;
 
 import vasyurin.work.enums.TransactionTypes;
+import vasyurin.work.services.TransactionServiceImpl;
+import vasyurin.work.services.interfaces.TransactionService;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Wallet {
+    private static final TransactionService transactionService = new TransactionServiceImpl();
 
     private final int id;
     private final List<Transaction> transactions = new ArrayList<>();
@@ -16,27 +19,26 @@ public class Wallet {
         transactions.add(firstMoney);
     }
 
-    public float getBalance() {
-        float balance = 0;
+    public int getId() {
+        return id;
+    }
 
-        for (Transaction transaction : transactions) {
-            if (transaction.getType().equals(TransactionTypes.INCOME)) {
-                balance += transaction.getAmount();
-            } else if (transaction.getType().equals(TransactionTypes.EXPENSE)) {
-                balance -= transaction.getAmount();
-            }
-        }
-        return balance;
+    public float getBalance() {
+      return transactionService.getSumOfAllTransaction(transactions);
     }
 
     public void addTransaction(Transaction transaction) {
         transactions.add(transaction);
     }
 
-    public int getId() {
-        return id;
+    public void addTransactions(List<Transaction> transactions) {
+        transactions.forEach(this::addTransaction);
     }
 
+    public void clearTransactions() {
+        transactions.clear();
+    }
+    
     public List<Transaction> getTransactions() {
         return transactions;
     }

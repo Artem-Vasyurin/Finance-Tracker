@@ -2,16 +2,9 @@ package vasyurin.work.utility;
 
 import vasyurin.work.entities.Transaction;
 import vasyurin.work.entities.Wallet;
-import vasyurin.work.enums.TransactionTypes;
 import vasyurin.work.exeption.NoMoneyException;
-import vasyurin.work.services.FileStorageServiceImpl;
-import vasyurin.work.services.FilterServiceImpl;
-import vasyurin.work.services.InputInConsoleValidatorImpl;
-import vasyurin.work.services.ReportServiceImpl;
-import vasyurin.work.services.interfaces.FileStorageService;
-import vasyurin.work.services.interfaces.FilterService;
-import vasyurin.work.services.interfaces.InputInConsoleValidator;
-import vasyurin.work.services.interfaces.ReportService;
+import vasyurin.work.services.*;
+import vasyurin.work.services.interfaces.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,10 +17,11 @@ public class ConsoleUtility {
     private static final Scanner scanner = new Scanner(System.in);
     private static final InputInConsoleValidator validator = new InputInConsoleValidatorImpl();
     private static final FileStorageService fileStorageService = new FileStorageServiceImpl();
+    private static final TransactionService transactionService = new TransactionServiceImpl();
     private static final FilterService filterService = new FilterServiceImpl();
     private static final ReportService reportService = new ReportServiceImpl();
+    private static final WalletCreator walletCreator = new WalletCreatorImpl();
     private static final List<Wallet> wallets = new ArrayList<>();
-
 
     private ConsoleUtility() {
     }
@@ -55,7 +49,7 @@ public class ConsoleUtility {
             switch (choice) {
                 case 1 -> performTransfer();
                 case 2 -> viewBalance();
-                case 3 -> createWallet();
+                case 3 -> wallets.add(walletCreator.createWallet(wallets));
                 case 4 -> showTransaction();
                 case 5 -> save();
                 case 0 -> Thread.currentThread().interrupt();
@@ -63,34 +57,22 @@ public class ConsoleUtility {
         }
     }
 
-    private void beginTransaction(Wallet senderWallet, Wallet receiverWallet, int sumTransaction) {
-        Transaction income = new Transaction(receiverWallet.getTransactions().size() + 1, receiverWallet.getId(), sumTransaction, TransactionTypes.INCOME);
-        Transaction expense = new Transaction(senderWallet.getTransactions().size() + 1, senderWallet.getId(), sumTransaction, TransactionTypes.EXPENSE);
-
-        if (senderWallet.getBalance() >= sumTransaction) {
-
-            senderWallet.addTransaction(expense);
-            receiverWallet.addTransaction(income);
-        } else {
-            throw new NoMoneyException("Не достаточно средств");
-        }
-
-        System.out.println("Транзакция успешно проведена");
-    }
-
-    private int getWallet() {
+    private Wallet getWallet(String message) {
         while (true) {
+            System.out.println(message);
             int id = 1;
-            for (Wallet wallet : ConsoleUtility.wallets) {
+            for (Wallet wallet : wallets) {
                 System.out.println(id++ + ". Баланс: " + wallet.getBalance());
             }
 
             System.out.println(0 + ". Назад");
             String choice = scanner.nextLine();
 
+            if (choice.equals("0")) return null;
+
             if (validator.validate(choice)) {
                 if (Integer.parseInt(choice) <= ConsoleUtility.wallets.size() && Integer.parseInt(choice) >= 0) {
-                    return Integer.parseInt(choice);
+                    return wallets.get(Integer.parseInt(choice) - 1);
                 } else {
                     System.out.println("Выберете существующий кошелёк из списка");
                 }
@@ -102,10 +84,8 @@ public class ConsoleUtility {
 
     private void showTransaction() {
         while (true) {
-            System.out.println("Выберите кошелёк список транзакций которого вы хотите просмотреть");
-
-            int walletChoice = getWallet();
-            if (walletChoice == 0) break;
+            Wallet wallet = getWallet("Выберите кошелёк список транзакций которого вы хотите просмотреть");
+            if (wallet == null) break;
 
             System.out.println(("""
                     Выберите какие транзакции вы хотите просмотреть
@@ -120,31 +100,31 @@ public class ConsoleUtility {
             switch (choice) {
                 case 1 -> {
                     try {
-                        reportService.printTransactionsTable(fileStorageService.download(walletChoice));
+                        reportService.printTransactionsTable(fileStorageService.download(wallet));
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        System.out.println("Ошибка, данные не загрузились, попробуйте снова позже");
                     }
                     return;
                 }
                 case 2 -> {
                     try {
-                        filteringTransactionsByCategory(walletChoice);
+                        filteringTransactionsByCategory(wallet);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        System.out.println("Ошибка, данные не загрузились, попробуйте снова позже");
                     }
                 }
                 case 3 -> {
                     try {
-                        filteringTransactionsByMonth(walletChoice);
+                        filteringTransactionsByMonth(wallet);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        System.out.println("Ошибка, данные не загрузились, попробуйте снова позже");
                     }
                 }
                 case 4 -> {
                     try {
-                        filteringTransactionsByType(walletChoice);
+                        filteringTransactionsByType(wallet);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        System.out.println("Ошибка, данные не загрузились, попробуйте снова позже");
                     }
                 }
                 case 0 -> {
@@ -154,7 +134,7 @@ public class ConsoleUtility {
         }
     }
 
-    private void filteringTransactionsByCategory(Integer walletId) throws IOException {
+    private void filteringTransactionsByCategory(Wallet wallet) throws IOException {
         while (true) {
             System.out.println(("""
                     Выберете категорию по которой надо отфильтровать
@@ -174,19 +154,12 @@ public class ConsoleUtility {
                 continue;
             }
 
-            List<Transaction> transactions = filterService.filteringTransactionsByCategory(walletId, choice);
-            if (transactions.isEmpty()) {
-                System.out.println("Таких транзакций нет :( ");
-
-            } else {
-                reportService.printTransactionsTable(transactions);
-                System.out.println("Сумма за все выбранная транзакции = " + getSumm(transactions));
-                break;
-            }
+            List<Transaction> transactions = filterService.filteringTransactionsByCategory(wallet, choice);
+            PrintTransactions(transactions);
         }
     }
 
-    private void filteringTransactionsByMonth(Integer walletId) throws IOException {
+    private void filteringTransactionsByMonth(Wallet wallet) throws IOException {
         while (true) {
             System.out.println("Напишите месяц по которому надо отфильтровать или 0 чтобы вернуться назад");
 
@@ -197,18 +170,12 @@ public class ConsoleUtility {
                 continue;
             }
 
-            List<Transaction> transactions = filterService.filteringTransactionsByMonth(walletId, month);
-            if (transactions.isEmpty()) {
-                System.out.println("Таких транзакций нет :( ");
-            } else {
-                reportService.printTransactionsTable(transactions);
-                System.out.println("Сумма за все выбранная транзакции = " + getSumm(transactions));
-                break;
-            }
+            List<Transaction> transactions = filterService.filteringTransactionsByMonth(wallet, month);
+            PrintTransactions(transactions);
         }
     }
 
-    private void filteringTransactionsByType(Integer walletId) throws IOException {
+    private void filteringTransactionsByType(Wallet wallet) throws IOException {
         while (true) {
             System.out.println(("""
                     Выберите тип транзакции по которому надо отфильтровать
@@ -225,49 +192,38 @@ public class ConsoleUtility {
                 continue;
             }
 
-            List<Transaction> transactions = filterService.filteringTransactionsByType(walletId, choice);
-            if (transactions.isEmpty()) {
-                System.out.println("Таких транзакций нет :( ");
-            } else {
-                reportService.printTransactionsTable(transactions);
-                System.out.println("Сумма за все выбранная транзакции = " + getSumm(transactions));
-                break;
-            }
+            List<Transaction> transactions = filterService.filteringTransactionsByType(wallet, choice);
+            PrintTransactions(transactions);
         }
     }
 
-    private float getSumm(List<Transaction> transactions) {
-        float summ = 0;
-
-        for (Transaction transaction : transactions) {
-            if (transaction.getType().equals(TransactionTypes.INCOME)) {
-                summ += transaction.getAmount();
-            } else if (transaction.getType().equals(TransactionTypes.EXPENSE)) {
-                summ -= transaction.getAmount();
-            }
+    private void PrintTransactions(List<Transaction> transactions) {
+        if (transactions.isEmpty()) {
+            System.out.println("Таких транзакций нет :( ");
+        } else {
+            reportService.printTransactionsTable(transactions);
+            System.out.println("Сумма за все выбранные транзакции = " + transactionService.getSumOfAllTransaction(transactions));
         }
-        return summ;
     }
 
     private void save() {
         while (true) {
-            System.out.println("Выберите кошелёк для сохранения его списка транзакций");
-            int walletChoice = getWallet();
-            if (walletChoice == 0) break;
+            Wallet walletChoice = getWallet("Выберите кошелёк для сохранения его списка транзакций");
+            if (walletChoice == null) break;
+
             try {
-                fileStorageService.save(wallets.get(walletChoice - 1));
+                fileStorageService.save(walletChoice);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                System.out.println("Ошибка, данные не cохранились, попробуйте снова позже");
             }
         }
     }
 
     private void viewBalance() {
         while (true) {
-            System.out.println("Выберите кошелёк");
-            int walletChoice = getWallet();
-            if (walletChoice == 0) break;
-            System.out.println(wallets.get(walletChoice - 1).getBalance());
+            Wallet walletChoice = getWallet("Выберите кошелёк");
+            if (walletChoice == null) break;
+            System.out.println(walletChoice.getBalance());
         }
     }
 
@@ -275,21 +231,12 @@ public class ConsoleUtility {
         Wallet senderWallet, receiverWallet;
 
         while (true) {
-            System.out.println("Выберите кошелёк списания ");
-
-            int choice = getWallet();
-            if (choice == 0) break;
-            senderWallet = wallets.get(choice - 1);
+            senderWallet = getWallet("Выберите кошелёк списания ");
+            if (senderWallet == null) break;
 
             while (true) {
-
-                System.out.println("Выберите кошелёк пополнения ");
-
-                choice = getWallet();
-
-                if (choice == 0) break;
-
-                receiverWallet = wallets.get(choice - 1);
+                receiverWallet = getWallet("Выберите кошелёк пополнения ");
+                if (receiverWallet == null) break;
 
                 if ((senderWallet.equals(receiverWallet))) {
 
@@ -314,25 +261,18 @@ public class ConsoleUtility {
                     if (sumTransaction == 0) break;
 
                     try {
-                        beginTransaction(senderWallet, receiverWallet, sumTransaction);
+                        transactionService.createTransaction(senderWallet, receiverWallet, sumTransaction);
+                        fileStorageService.save(senderWallet);
+                        fileStorageService.save(receiverWallet);
                     } catch (NoMoneyException e) {
                         System.out.println(e.getMessage());
                         continue;
-                    }
-                    try {
-                        fileStorageService.save(senderWallet);
-                        fileStorageService.save(receiverWallet);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        System.out.println("Ошибка, данные не cохранились, попробуйте снова позже");
                     }
                     return;
                 }
             }
         }
-    }
-
-    private void createWallet() {
-        Wallet wallet = new Wallet(wallets.size() + 1);
-        wallets.add(wallet);
     }
 }
