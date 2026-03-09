@@ -26,15 +26,8 @@ public class KafkaProducerService {
     public void sendMessage(String topic, String message) {
         ProducerRecord<String, String> record = new ProducerRecord<>(topic, message);
         kafkaProducer.send(record);
-        writeToFile(record);
         kafkaProducer.flush();
     }
 
-    private void writeToFile(ProducerRecord<String, String> record) {
-        try {
-            Files.writeString(Path.of("events.log"), record.value() + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+
 }
