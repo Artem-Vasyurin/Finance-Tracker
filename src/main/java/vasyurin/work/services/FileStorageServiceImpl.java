@@ -2,6 +2,7 @@ package vasyurin.work.services;
 
 import vasyurin.work.entities.Transaction;
 import vasyurin.work.entities.Wallet;
+import vasyurin.work.exeption.NoTransactionExeption;
 import vasyurin.work.repositories.FileStorageRepository;
 import vasyurin.work.repositories.FileStorageRepositoryImpl;
 import vasyurin.work.services.interfaces.FileStorageService;
@@ -15,7 +16,11 @@ public class FileStorageServiceImpl implements FileStorageService {
 
     @Override
     public void save(Wallet wallet) throws IOException {
-        fileStorageRepository.save(wallet.getTransactions());
+        if (!wallet.getTransactions().isEmpty()) {
+            fileStorageRepository.save(wallet.getTransactions());
+        } else {
+            throw new NoTransactionExeption("Нет транзакций для сохранения");
+        }
     }
 
     @Override

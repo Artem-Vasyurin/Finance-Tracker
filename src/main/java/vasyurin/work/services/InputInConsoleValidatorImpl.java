@@ -8,8 +8,7 @@ public class InputInConsoleValidatorImpl implements InputInConsoleValidator {
     public boolean validate(String input) {
         try {
             Integer.parseInt(input);
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             return false;
         }
         return true;

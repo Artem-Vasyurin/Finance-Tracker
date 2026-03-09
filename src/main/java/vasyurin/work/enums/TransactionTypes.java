@@ -1,6 +1,6 @@
 package vasyurin.work.enums;
 
-public enum TransactionType {
+public enum TransactionTypes {
     INCOME,
     EXPENSE
 }
