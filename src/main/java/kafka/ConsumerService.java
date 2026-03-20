@@ -3,7 +3,8 @@ package kafka;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.errors.WakeupException;
+import vasyurin.work.config.interfaces.KafkaConsumerConfig;
+import vasyurin.work.config.KafkaConsumerConfigImpl;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,18 +15,22 @@ import java.util.Arrays;
 import java.util.Properties;
 
 public class ConsumerService {
+    private static final KafkaConsumerConfig kafkaConsumerConfig = new KafkaConsumerConfigImpl();
+
     public static void main(String[] args) {
         Properties props = new Properties();
 
-        props.put("bootstrap.servers", "localhost:9092");
-        props.put("group.id", "transactions-group");
-        props.put("auto.offset.reset", "earliest");
+        props.put("bootstrap.servers", kafkaConsumerConfig.getBootstrapServers());
+        props.put("group.id", kafkaConsumerConfig.getGroupId());
+        props.put("auto.offset.reset", kafkaConsumerConfig.getAutoOffsetReset());
 
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put("key.deserializer", kafkaConsumerConfig.getKeyDeserializer());
+        props.put("value.deserializer", kafkaConsumerConfig.getValueDeserializer());
 
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
-            consumer.subscribe(Arrays.asList("transactions"));
+            consumer.subscribe(Arrays.asList(kafkaConsumerConfig.getTopic()));
+            System.out.println("Subscribed to topic: " + kafkaConsumerConfig.getTopic());
+            System.out.println("Subscribed to group: " + kafkaConsumerConfig.getGroupId());
 
             while (true) {
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));

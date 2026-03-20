@@ -3,6 +3,7 @@ package vasyurin.work.utility;
 import vasyurin.work.entities.Transaction;
 import vasyurin.work.entities.Wallet;
 import vasyurin.work.exeption.NoMoneyException;
+import vasyurin.work.kafka.KafkaBatchSchedulerService;
 import vasyurin.work.services.*;
 import vasyurin.work.services.interfaces.*;
 
@@ -16,8 +17,9 @@ public class ConsoleUtility {
     private static final ConsoleUtility instance = new ConsoleUtility();
     private static final Scanner scanner = new Scanner(System.in);
     private static final InputInConsoleValidator validator = new InputInConsoleValidatorImpl();
+    private static final KafkaBatchSchedulerService kafkaBatchSchedulerService = new KafkaBatchSchedulerService();
+    private static final TransactionService transactionService = new TransactionServiceImpl(kafkaBatchSchedulerService);
     private static final FileStorageService fileStorageService = new FileStorageServiceImpl();
-    private static final TransactionService transactionService = new TransactionServiceImpl();
     private static final FilterService filterService = new FilterServiceImpl();
     private static final ReportService reportService = new ReportServiceImpl();
     private static final WalletCreator walletCreator = new WalletCreatorImpl();

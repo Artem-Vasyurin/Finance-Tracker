@@ -1,5 +1,6 @@
 package vasyurin.work.repositories;
 
+import vasyurin.work.config.FileStorageConfig;
 import vasyurin.work.entities.Transaction;
 import vasyurin.work.entities.Wallet;
 import vasyurin.work.enums.CategoriesTypes;
@@ -15,19 +16,18 @@ public class FileStorageRepositoryImpl implements FileStorageRepository {
     @Override
     public void save(List<Transaction> transactions) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(
-                new FileWriter("transactions/transactionsInWalletId" + transactions.get(0).getWalletId() + ".txt"))) {
+                new FileWriter(FileStorageConfig.CONFIG_PASS_FILE_NAME + transactions.get(0).getWalletId() + ".txt"))) {
             for (Transaction transaction : transactions) {
                 writer.write(transaction.toString());
                 writer.newLine();
             }
         }
-
     }
 
     @Override
     public List<Transaction> download(Wallet wallet) throws IOException {
         List<Transaction> transactions = new ArrayList<>();
-        BufferedReader reader = new BufferedReader(new FileReader("transactions/transactionsInWalletId" + wallet.getId() + ".txt"));
+        BufferedReader reader = new BufferedReader(new FileReader(FileStorageConfig.CONFIG_PASS_FILE_NAME + wallet.getId() + ".txt"));
         String line;
         while ((line = reader.readLine()) != null) {
 
