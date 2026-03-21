@@ -1,6 +1,7 @@
 package vasyurin.work.services;
 
 import vasyurin.work.entities.Transaction;
+import vasyurin.work.entities.Wallet;
 import vasyurin.work.enums.CategoriesTypes;
 import vasyurin.work.enums.TransactionTypes;
 import vasyurin.work.services.interfaces.FileStorageService;
@@ -15,66 +16,66 @@ public class FilterServiceImpl implements FilterService {
     private static final FileStorageService fileStorageService = new FileStorageServiceImpl();
 
     @Override
-    public List<Transaction> filteringTransactionsByCategory(Integer walletId, Integer choice) throws IOException {
+    public List<Transaction> filteringTransactionsByCategory(Wallet wallet, Integer choice) throws IOException {
 
         switch (choice) {
             case 1 -> {
-                return getAndFilteringByCategory(walletId, CategoriesTypes.SUPERMARKET);
+                return getAndFilteringByCategory(wallet, CategoriesTypes.SUPERMARKET);
             }
             case 2 -> {
-                return getAndFilteringByCategory(walletId, CategoriesTypes.FASTFOOD);
+                return getAndFilteringByCategory(wallet, CategoriesTypes.FASTFOOD);
             }
             case 3 -> {
-                return getAndFilteringByCategory(walletId, CategoriesTypes.CLOTHING);
+                return getAndFilteringByCategory(wallet, CategoriesTypes.CLOTHING);
             }
             case 4 -> {
-                return getAndFilteringByCategory(walletId, CategoriesTypes.TICKETS);
+                return getAndFilteringByCategory(wallet, CategoriesTypes.TICKETS);
             }
             case 5 -> {
-                return getAndFilteringByCategory(walletId, CategoriesTypes.OTHER);
+                return getAndFilteringByCategory(wallet, CategoriesTypes.OTHER);
             }
         }
         return List.of();
     }
 
     @Override
-    public List<Transaction> filteringTransactionsByMonth(Integer walletId, Integer month) throws IOException {
-        return getAndFilteringByMonth(walletId, month);
+    public List<Transaction> filteringTransactionsByMonth(Wallet wallet, Integer month) throws IOException {
+        return getAndFilteringByMonth(wallet, month);
     }
 
     @Override
-    public List<Transaction> filteringTransactionsByType(Integer walletId, Integer choice) throws IOException {
+    public List<Transaction> filteringTransactionsByType(Wallet wallet, Integer choice) throws IOException {
 
         switch (choice) {
             case 1 -> {
-                return getAndFilteringByType(walletId, TransactionTypes.INCOME);
+                return getAndFilteringByType(wallet, TransactionTypes.INCOME);
             }
             case 2 -> {
-                return getAndFilteringByType(walletId, TransactionTypes.EXPENSE);
+                return getAndFilteringByType(wallet, TransactionTypes.EXPENSE);
             }
         }
         return List.of();
     }
 
-    private List<Transaction> getAndFilteringByCategory(Integer walletId, CategoriesTypes category) throws IOException {
+    private List<Transaction> getAndFilteringByCategory(Wallet wallet, CategoriesTypes category) throws IOException {
 
-        return fileStorageService.download(walletId)
+        return fileStorageService.download(wallet)
                 .stream()
                 .filter(transaction -> transaction.getCategory() == category)
                 .toList();
     }
 
-    private List<Transaction> getAndFilteringByMonth(Integer walletId, Integer month) throws IOException {
+    private List<Transaction> getAndFilteringByMonth(Wallet wallet, Integer month) throws IOException {
 
-        return fileStorageService.download(walletId)
+        return fileStorageService.download(wallet)
                 .stream()
                 .filter(transaction -> transaction.getCreated().toLocalDateTime().getMonthValue() == month)
                 .toList();
     }
 
-    private List<Transaction> getAndFilteringByType(Integer walletId, TransactionTypes type) throws IOException {
+    private List<Transaction> getAndFilteringByType(Wallet wallet, TransactionTypes type) throws IOException {
 
-        return fileStorageService.download(walletId)
+        return fileStorageService.download(wallet)
                 .stream()
                 .filter(transaction -> transaction.getType() == type)
                 .toList();

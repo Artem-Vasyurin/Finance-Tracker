@@ -1,6 +1,7 @@
 package vasyurin.work.repositories;
 
 import vasyurin.work.entities.Transaction;
+import vasyurin.work.entities.Wallet;
 import vasyurin.work.enums.CategoriesTypes;
 import vasyurin.work.enums.TransactionTypes;
 
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FileStorageRepositoryImpl implements FileStorageRepository {
+
     @Override
     public void save(List<Transaction> transactions) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(
@@ -23,9 +25,9 @@ public class FileStorageRepositoryImpl implements FileStorageRepository {
     }
 
     @Override
-    public List<Transaction> download(Integer walletId) throws IOException {
+    public List<Transaction> download(Wallet wallet) throws IOException {
         List<Transaction> transactions = new ArrayList<>();
-        BufferedReader reader = new BufferedReader(new FileReader("transactions/transactionsInWalletId" + walletId + ".txt"));
+        BufferedReader reader = new BufferedReader(new FileReader("transactions/transactionsInWalletId" + wallet.getId() + ".txt"));
         String line;
         while ((line = reader.readLine()) != null) {
 
@@ -51,7 +53,7 @@ public class FileStorageRepositoryImpl implements FileStorageRepository {
                     case "created" -> created = Timestamp.valueOf(values[1]);
                 }
             }
-            if (filleWalletId == walletId) {
+            if (filleWalletId == wallet.getId()) {
                 Transaction transaction = new Transaction(transactionId, filleWalletId, amount, transactionType, category, created);
                 transactions.add(transaction);
             }

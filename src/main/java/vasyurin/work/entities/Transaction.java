@@ -40,6 +40,10 @@ public class Transaction {
         this.created = created;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public int getWalletId() {
         return walletId;
     }
