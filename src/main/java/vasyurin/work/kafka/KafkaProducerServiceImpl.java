@@ -3,6 +3,7 @@ package vasyurin.work.kafka;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import vasyurin.work.config.KafkaProducerConfigImpl;
+import vasyurin.work.kafka.interfaces.KafkaProducerService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,11 +11,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
-public class KafkaProducerService {
+public class KafkaProducerServiceImpl implements KafkaProducerService {
 
     private final KafkaProducer<String, String> kafkaProducer;
 
-    public KafkaProducerService() {
+    public KafkaProducerServiceImpl() {
         Properties props = new Properties();
         props.put("bootstrap.servers", KafkaProducerConfigImpl.BOOTSTRAPSERVERS);
         props.put("key.serializer", KafkaProducerConfigImpl.KEYSERIALIZER);
@@ -22,8 +23,7 @@ public class KafkaProducerService {
         kafkaProducer = new KafkaProducer<>(props);
     }
 
-
-
+    @Override
     public void sendMessage(ProducerRecord<String, String> record) {
         for (int i = 1; i <= KafkaProducerConfigImpl.MAX_RETRIES; i++) {
             try {
@@ -60,10 +60,12 @@ public class KafkaProducerService {
         writeToFile(record);
     }
 
+    @Override
     public void flush() {
         kafkaProducer.flush();
     }
 
+    @Override
     public void close() {
         kafkaProducer.close();
     }

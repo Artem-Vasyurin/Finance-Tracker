@@ -1,8 +1,8 @@
 package vasyurin.work.kafka;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
+import vasyurin.work.kafka.interfaces.KafkaProducerService;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -10,17 +10,24 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class KafkaBatchSchedulerService implements Runnable {
-    private final KafkaProducerService kafkaProducerService = new KafkaProducerService();
+    private final KafkaProducerService kafkaProducerService;
     private final ScheduledExecutorService schedule = new ScheduledThreadPoolExecutor(1);
     private final List<ProducerRecord<String,String>> messages = new ArrayList<>();
 
-    public KafkaBatchSchedulerService(){
+    public KafkaBatchSchedulerService(KafkaProducerService kafkaProducerService){
+        this.kafkaProducerService = new KafkaProducerServiceImpl();
         start();
     }
 
-    public void addMessageToBath(String topic, String message) {
+    public void addMessageToBatch(String topic, String message) {
         ProducerRecord<String, String> record = new ProducerRecord<>(topic, message);
-        messages.add(record);
+        synchronized (this) {
+            messages.add(record);
+        }
+    }
+
+    public void shutdown() {
+        schedule.shutdown();
     }
 
     private void start() {
@@ -28,14 +35,19 @@ public class KafkaBatchSchedulerService implements Runnable {
     }
 
     private void sendMessageToKafka() {
-        if (messages.isEmpty()) {
-            return;
+        List<ProducerRecord<String,String>> records;
+
+        synchronized (this) {
+            if (messages.isEmpty()) {
+                return;
+            }
+            records = new ArrayList<>(messages);
+            messages.clear();
         }
-        for (ProducerRecord<String,String> record : messages) {
+        for (ProducerRecord<String,String> record : records) {
             kafkaProducerService.sendMessage(record);
         }
         kafkaProducerService.flush();
-        messages.clear();
     }
 
     @Override

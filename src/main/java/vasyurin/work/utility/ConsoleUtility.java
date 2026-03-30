@@ -4,6 +4,8 @@ import vasyurin.work.entities.Transaction;
 import vasyurin.work.entities.Wallet;
 import vasyurin.work.exeption.NoMoneyException;
 import vasyurin.work.kafka.KafkaBatchSchedulerService;
+import vasyurin.work.kafka.KafkaProducerServiceImpl;
+import vasyurin.work.kafka.interfaces.KafkaProducerService;
 import vasyurin.work.services.*;
 import vasyurin.work.services.interfaces.*;
 
@@ -17,7 +19,8 @@ public class ConsoleUtility {
     private static final ConsoleUtility instance = new ConsoleUtility();
     private static final Scanner scanner = new Scanner(System.in);
     private static final InputInConsoleValidator validator = new InputInConsoleValidatorImpl();
-    private static final KafkaBatchSchedulerService kafkaBatchSchedulerService = new KafkaBatchSchedulerService();
+    private static final KafkaProducerService kafkaProducerService = new KafkaProducerServiceImpl();
+    private static final KafkaBatchSchedulerService kafkaBatchSchedulerService = new KafkaBatchSchedulerService(kafkaProducerService);
     private static final TransactionService transactionService = new TransactionServiceImpl(kafkaBatchSchedulerService);
     private static final FileStorageService fileStorageService = new FileStorageServiceImpl();
     private static final FilterService filterService = new FilterServiceImpl();
@@ -54,7 +57,10 @@ public class ConsoleUtility {
                 case 3 -> wallets.add(walletCreator.createWallet(wallets));
                 case 4 -> showTransaction();
                 case 5 -> save();
-                case 0 -> Thread.currentThread().interrupt();
+                case 0 -> {
+                    kafkaBatchSchedulerService.shutdown();
+                    Thread.currentThread().interrupt();
+                }
             }
         }
     }
